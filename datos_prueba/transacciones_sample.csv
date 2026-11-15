@@ -1,0 +1,10 @@
+tx_id,account_id,amount,tx_date,description
+TX-9001, acc-101 ,"$1,450.75",2026-11-15,Liquidación de póliza anual
+TX-9002,ACC-102,850.00,2026-11-15,Pago parcial sin email válido
+TX-9003,ACC-104,N/A,2026-11-15,Transacción con monto inválido
+TX-9004,ACC-104,"$3,200.00",2026-11-15,Cuenta inactiva no elegible
+TX-9005, acc-105 ," $ 2,800.50 USD ",2026-11-15,Renovación corporativa Q4
+TX-9006,ACC-106,"USD 1,250.00",2026-11-15,Ajuste operativo aprobado
+TX-9007,ACC-101,450.00,2026-11-15,Monto menor al umbral mínimo
+TX-9008,ACC-106,ERROR_TXT,2026-11-15,Registro corrupto en origen
+TX-9009,ACC-999,"$5,000.00",2026-11-15,Cuenta huérfana inexistente en CRM

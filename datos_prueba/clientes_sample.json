@@ -1,0 +1,52 @@
+[
+  {
+    "account_id": " acc-101 ",
+    "client": {
+      "name": "  Ana Gómez ",
+      "email": "ANA.GOMEZ@GMAIL.COM ",
+      "segment": "Enterprise"
+    },
+    "status": "active"
+  },
+  {
+    "account_id": "ACC-102",
+    "client": {
+      "name": "Carlos Ruiz",
+      "email": null,
+      "segment": "Mid-Market"
+    },
+    "status": "ACTIVE"
+  },
+  {
+    "account_id": "ACC-103",
+    "client": null,
+    "status": "active"
+  },
+  {
+    "account_id": " acc-104 ",
+    "client": {
+      "name": "Luis Paz",
+      "email": "luis.paz@correo.com",
+      "segment": "SMB"
+    },
+    "status": "inactive"
+  },
+  {
+    "account_id": "acc-105",
+    "client": {
+      "name": "  María Fernanda Torres  ",
+      "email": "  MFERNANDA@EMPRESA.ORG",
+      "segment": "Enterprise"
+    },
+    "status": " Active "
+  },
+  {
+    "account_id": "ACC-106",
+    "client": {
+      "name": "Roberto Díaz",
+      "email": "roberto.diaz@dominio.com",
+      "segment": "Corporate"
+    },
+    "status": "ACTIVE"
+  }
+]

@@ -1,0 +1,11 @@
+pandas
+duckdb
+sqlite-utils
+glom
+tenacity
+loguru
+requests
+flask
+google-cloud-storage
+google-api-python-client
+google-auth
