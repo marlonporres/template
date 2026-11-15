@@ -53,6 +53,7 @@ __pycache__/
 # =============================================================================
 # 7. REPORTES GENERADOS Y ARCHIVOS DE PRÁCTICA LOCAL (SCRATCH)
 # =============================================================================
+PLAN_B_COPIAR_AL_CORREO.txt
 output/
 reporte_*.csv
 reporte_*.json
