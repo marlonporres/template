@@ -54,16 +54,18 @@ def ejecutar_pipeline():
     tabla.insert_all(df_final.to_dict(orient="records"), pk=PK_COLUMN, alter=True, ignore=True)
 
     pendientes = list(tabla.rows_where("sync_status = ?", ["PENDING"]))
-    for item in pendientes:
-        resp_id = item[PK_COLUMN]
-        try:
-            client = storage.Client.from_service_account_json(SERVICE_ACCOUNT_FILE)
-            blob = client.bucket(BUCKET_NAME).blob(f"{GCS_FOLDER}/{resp_id}.json")
-            blob.upload_from_string(json.dumps(item, indent=2), content_type="application/json")
-        except Exception as e:
-            logger.warning(f"Aviso GCS para {resp_id}: {e}")
-        tabla.update(resp_id, {"sync_status": "SYNCED"}, alter=True)
-    logger.info(f"Proceso completado. Respuestas sincronizadas: {len(pendientes)}")
+    if pendientes:
+        client = storage.Client.from_service_account_json(SERVICE_ACCOUNT_FILE)
+        bucket = client.bucket(BUCKET_NAME)
+        for item in pendientes:
+            resp_id = item[PK_COLUMN]
+            try:
+                blob = bucket.blob(f"{GCS_FOLDER}/{resp_id}.json")
+                blob.upload_from_string(json.dumps(item, indent=2, ensure_ascii=False), content_type="application/json")
+                tabla.update(resp_id, {"sync_status": "SYNCED"}, alter=True)
+            except Exception as e:
+                logger.error(f"Error subiendo {resp_id} a GCS (permanece en PENDING): {e}")
+    logger.info(f"Proceso completado. Pendientes procesados: {len(pendientes)}")
 
 if __name__ == "__main__":
     ejecutar_pipeline()

@@ -1,3 +1,4 @@
+import os
 import json
 import pandas as pd
 import duckdb
@@ -59,14 +60,19 @@ def ejecutar_pipeline():
     pendientes = list(tabla.rows_where("sync_status = ?", ["PENDING"]))
     if pendientes:
         pd.DataFrame(pendientes).to_csv(OUTPUT_CSV, index=False, encoding="utf-8")
-        try:
-            client = storage.Client.from_service_account_json(SERVICE_ACCOUNT_FILE)
-            client.bucket(BUCKET_NAME).blob(BLOB_DESTINO).upload_from_filename(OUTPUT_CSV)
-        except Exception as e:
-            logger.warning(f"Aviso GCS (continuando en local): {e}")
-        for r in pendientes:
-            tabla.update(r[PK_COLUMN], {"sync_status": "SYNCED"}, alter=True)
-    logger.info(f"Proceso completado. Sincronizados en esta corrida: {len(pendientes)}")
+        if os.path.exists(SERVICE_ACCOUNT_FILE):
+            try:
+                client = storage.Client.from_service_account_json(SERVICE_ACCOUNT_FILE)
+                client.bucket(BUCKET_NAME).blob(BLOB_DESTINO).upload_from_filename(OUTPUT_CSV)
+                for r in pendientes:
+                    tabla.update(r[PK_COLUMN], {"sync_status": "SYNCED"}, alter=True)
+                logger.info(f"Subida a GCS exitosa. Sincronizados: {len(pendientes)}")
+            except Exception as e:
+                logger.error(f"Error subiendo a GCS (registros permanecen en PENDING): {e}")
+        else:
+            logger.warning("Modo local sin service_account.json: marcando SYNCED tras exportar CSV local")
+            for r in pendientes:
+                tabla.update(r[PK_COLUMN], {"sync_status": "SYNCED"}, alter=True)
 
 if __name__ == "__main__":
     ejecutar_pipeline()

@@ -45,7 +45,7 @@ def ejecutar_pipeline():
     df = pd.DataFrame(filas)
     df["amount"] = pd.to_numeric(df["amount"].astype(str).str.replace(r"[$,USD\s]", "", regex=True), errors="coerce")
     df_validos = duckdb.sql("SELECT *, 'PENDING' AS sync_status FROM df WHERE amount > 0 AND client_email LIKE '%@%' AND status = 'APPROVED'").df()
-    df_rechazados = duckdb.sql("SELECT *, 'DATOS_INVALIDOS' AS rejection_reason FROM df WHERE amount IS NULL OR amount <= 0 OR client_email NOT LIKE '%@%'").df()
+    df_rechazados = duckdb.sql("SELECT *, 'DATOS_INVALIDOS' AS rejection_reason FROM df WHERE amount IS NULL OR amount <= 0 OR client_email NOT LIKE '%@%' OR status != 'APPROVED'").df()
 
     # >>> CAMBIO EN CALIENTE AQUÍ: Llave primaria (pk) e inserción idempotente en SQLite
     db = Database(DB_NAME)
@@ -54,9 +54,12 @@ def ejecutar_pipeline():
 
     pendientes = list(db[VALID_TABLE].rows_where("sync_status = ?", ["PENDING"]))
     for reg in pendientes:
-        llamar_api("POST", WORKBENCH_SYNC_URL, payload=reg)
-        db[VALID_TABLE].update(reg[PK_COLUMN], {"sync_status": "SYNCED"}, alter=True)
-    logger.info(f"Proceso completado. Enviados: {len(pendientes)} | Rechazados: {len(df_rechazados)}")
+        try:
+            llamar_api("POST", WORKBENCH_SYNC_URL, payload=reg)
+            db[VALID_TABLE].update(reg[PK_COLUMN], {"sync_status": "SYNCED"}, alter=True)
+        except Exception as e:
+            logger.error(f"Error sincronizando {reg[PK_COLUMN]}: {e}")
+    logger.info(f"Proceso completado. Pendientes procesados: {len(pendientes)} | Rechazados: {len(df_rechazados)}")
 
 if __name__ == "__main__":
     ejecutar_pipeline()
