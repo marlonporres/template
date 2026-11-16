@@ -119,6 +119,27 @@ logger.warning(f"Registro omitido por monto inválido: {record_id}")
 logger.error(f"Fallo crítico al conectar con endpoint externo: {err}")
 ```
 
+### 3.8 `google-cloud-storage` — Retrieval (Descargar archivos desde GCS a local)
+```python
+from google.cloud import storage
+client = storage.Client.from_service_account_json("service_account.json")
+blob = client.bucket("nombre-del-bucket").blob("carpeta_origen/clientes.csv")
+blob.download_to_filename("clientes_descargado.csv")  # Descarga a disco local para leer con pd.read_csv()
+# O descargar directo en memoria como texto/JSON y listar blobs de un prefijo:
+contenido_json = json.loads(blob.download_as_text(encoding="utf-8"))
+archivos = [b.name for b in client.list_blobs("nombre-del-bucket", prefix="carpeta_origen/")]
+```
+
+### 3.9 Consultas de Agregación y Lectura Nativa en SQLite (`sqlite3` + `pandas`)
+```python
+import sqlite3, pandas as pd
+with sqlite3.connect("migracion_escenario_a.db") as conn:
+    df_resumen = pd.read_sql_query("""
+        SELECT sync_status, COUNT(*) AS total_registros, ROUND(SUM(amount), 2) AS monto_total
+        FROM transacciones_conciliadas GROUP BY sync_status
+    """, conn)
+```
+
 ---
 
 ## 4. Buenas Prácticas Agile y Entrega de Evaluación Técnica
@@ -154,3 +175,29 @@ Copia y adapta este bloque en tu correo, PR o nota de entrega al finalizar la ev
 4. **Resiliencia en Red (`tenacity`):**
    - Las llamadas externas hacia APIs REST y Google Cloud Storage están decoradas con `@retry` y backoff exponencial para tolerar microcortes o errores transitorios (HTTP 5xx / Timeouts).
 ```
+
+### 4.3 Technical Delivery Summary & Weekly Accountability Pitch (English Version)
+Lista para pegar en el PR/correo en inglés o decir verbalmente durante la entrevista:
+
+```markdown
+## Technical Implementation Summary (English)
+
+1. **Defensive Data Extraction (`glom` & `utf-8-sig`):**
+   - Used `glom` to safely traverse nested JSON payloads and dynamic Google Forms responses, preventing `KeyError` or `TypeError` exceptions on `null` or missing optional fields.
+   - Configured CSV ingestion with `encoding="utf-8-sig"` to strip potential Excel BOM characters automatically.
+
+2. **Data Normalization & Relational Validation (`pandas` & `duckdb`):**
+   - Sanitized currency fields via regex and `pd.to_numeric(..., errors="coerce")` to isolate malformed amounts without crashing the pipeline.
+   - Executed declarative SQL joins and business rule validations in-memory using `DuckDB`, separating valid records from rejected ones (`registros_rechazados`) for full auditability.
+
+3. **Transactional Idempotency (`sqlite-utils`):**
+   - Persisted records into SQLite using primary keys (`ignore=True`) with an initial `PENDING` status.
+   - Enforced atomic state transitions: records are updated to `SYNCED` strictly inside the `try` block after confirming successful upload to Google Cloud Storage or HTTP 200 response from the destination API.
+
+4. **Fault Tolerance & Observability (`tenacity` & `loguru`):**
+   - Wrapped external API calls with exponential backoff retries (`@retry`) and structured execution logs via `loguru` to ensure minimal downtime and rapid troubleshooting.
+```
+
+**Spoken Pitch (30 segundos para explicar tu código en inglés):**
+> *"I structured the automation as an idempotent 4-step pipeline: First, I extract the raw data defensively using `glom` and `utf-8-sig` so null or missing fields never break execution. Second, I clean currency and string fields in `Pandas` and apply business rules using `DuckDB` SQL queries, isolating invalid rows into an audit table. Third, I track state in SQLite as `PENDING` using `sqlite-utils` with primary-key deduplication. Finally, I sync pending records to Google Cloud Storage or the REST API with `tenacity` retries, updating the status to `SYNCED` only after a confirmed upload."*
+
